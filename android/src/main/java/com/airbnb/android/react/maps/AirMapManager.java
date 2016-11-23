@@ -20,7 +20,6 @@ import com.google.android.gms.maps.GoogleMapOptions;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MapStyleOptions;
 
 import java.util.Map;
 
@@ -70,7 +69,7 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
             emitMapError("Map initialize error", "map_init_error");
         }
 
-        return new AirMapView(context, this.appContext.getCurrentActivity(), this, this.googleMapOptions);
+        return new AirMapView(context, this.appContext, this, this.googleMapOptions);
     }
 
     private void emitMapError(String message, String type) {
@@ -96,7 +95,6 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     
     @ReactProp(name = "customMapStyleString")
     public void setMapStyle(AirMapView view, @Nullable String customMapStyleString) {
-        view.map.setMapStyle(new MapStyleOptions(customMapStyleString));
     }
 
     @ReactProp(name = "showsUserLocation", defaultBoolean = false)

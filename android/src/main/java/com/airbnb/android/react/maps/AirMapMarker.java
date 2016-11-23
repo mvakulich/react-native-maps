@@ -176,9 +176,6 @@ public class AirMapMarker extends AirMapFeature {
 
     public void setZIndex(int zIndex) {
         this.zIndex = zIndex;
-        if (marker != null) {
-            marker.setZIndex(zIndex);
-        }
         update();
     }
 
@@ -297,7 +294,6 @@ public class AirMapMarker extends AirMapFeature {
         options.rotation(rotation);
         options.flat(flat);
         options.draggable(draggable);
-        options.zIndex(zIndex);
         options.icon(getIcon());
         return options;
     }
