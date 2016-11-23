@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.location.Location;
 import android.os.Handler;
 import android.os.Build;
 import android.support.v4.view.GestureDetectorCompat;
@@ -51,7 +52,7 @@ import java.util.Map;
 import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
-        GoogleMap.OnMarkerDragListener, OnMapReadyCallback {
+        GoogleMap.OnMarkerDragListener, OnMapReadyCallback, GoogleMap.OnMyLocationChangeListener {
     public GoogleMap map;
 
     private ProgressBar mapLoadingProgressBar;
@@ -245,6 +246,11 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
             }
         });
 
+        map.setOnMyLocationChangeListener(this);
+
+        pushLocation(map.getMyLocation());
+
+
         // We need to be sure to disable location-tracking when app enters background, in-case some
         // other module
         // has acquired a wake-lock and is controlling location-updates, otherwise, location-manager
@@ -263,6 +269,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                     AirMapView.this.onResume();
                     paused = false;
                 }
+                map.setOnMyLocationChangeListener(AirMapView.this);
             }
 
             @Override
@@ -270,6 +277,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                 if (hasPermissions()) {
                     //noinspection MissingPermission
                     map.setMyLocationEnabled(false);
+                    map.setOnMyLocationChangeListener(null);
                 }
                 synchronized (AirMapView.this) {
                     AirMapView.this.onPause();
@@ -286,9 +294,24 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         context.addLifecycleEventListener(lifecycleListener);
     }
 
+    private void pushLocation(Location loc){
+        if (loc != null) {
+            WritableMap wm = new WritableNativeMap();
+            wm.putDouble("latitude", loc.getLatitude());
+            wm.putDouble("longitude", loc.getLatitude());
+            wm.putDouble("altitude", loc.getLatitude());
+            manager.pushEvent(this, "onLocationChange", wm);
+        }
+
+    }
+
     private boolean hasPermissions() {
         return checkSelfPermission(getContext(), PERMISSIONS[0]) == PackageManager.PERMISSION_GRANTED ||
                 checkSelfPermission(getContext(), PERMISSIONS[1]) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public void onMyLocationChange(Location location) {
+        pushLocation(location);
     }
 
     /*
