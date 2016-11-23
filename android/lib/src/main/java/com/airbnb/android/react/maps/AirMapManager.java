@@ -1,9 +1,9 @@
 package com.airbnb.android.react.maps;
 
 import android.view.View;
+import android.content.Context;
 
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -16,7 +16,6 @@ import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.GoogleMapOptions;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -31,26 +30,20 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     private static final int ANIMATE_TO_REGION = 1;
     private static final int ANIMATE_TO_COORDINATE = 2;
     private static final int FIT_TO_ELEMENTS = 3;
-    private static final int FIT_TO_SUPPLIED_MARKERS = 4;
-    private static final int FIT_TO_COORDINATES = 5;
 
     private final Map<String, Integer> MAP_TYPES = MapBuilder.of(
             "standard", GoogleMap.MAP_TYPE_NORMAL,
             "satellite", GoogleMap.MAP_TYPE_SATELLITE,
             "hybrid", GoogleMap.MAP_TYPE_HYBRID,
-            "terrain", GoogleMap.MAP_TYPE_TERRAIN,
-            "none", GoogleMap.MAP_TYPE_NONE
+            "terrain", GoogleMap.MAP_TYPE_TERRAIN
     );
 
     private ReactContext reactContext;
 
-    private final ReactApplicationContext appContext;
+    private final Context appContext;
 
-    protected GoogleMapOptions googleMapOptions;
-
-    public AirMapManager(ReactApplicationContext context) {
+    public AirMapManager(Context context) {
         this.appContext = context;
-        this.googleMapOptions = new GoogleMapOptions();
     }
 
     @Override
@@ -69,7 +62,13 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
             emitMapError("Map initialize error", "map_init_error");
         }
 
-        return new AirMapView(context, this.appContext, this, this.googleMapOptions);
+        return new AirMapView(context, this.appContext, this);
+    }
+
+    @Override
+    public void onDropViewInstance(AirMapView view) {
+        view.doDestroy();
+        super.onDropViewInstance(view);
     }
 
     private void emitMapError(String message, String type) {
@@ -92,19 +91,10 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
         int typeId = MAP_TYPES.get(mapType);
         view.map.setMapType(typeId);
     }
-    
-    @ReactProp(name = "customMapStyleString")
-    public void setMapStyle(AirMapView view, @Nullable String customMapStyleString) {
-    }
 
     @ReactProp(name = "showsUserLocation", defaultBoolean = false)
     public void setShowsUserLocation(AirMapView view, boolean showUserLocation) {
         view.setShowsUserLocation(showUserLocation);
-    }
-
-    @ReactProp(name = "showsMyLocationButton", defaultBoolean = true)
-    public void setShowsMyLocationButton(AirMapView view, boolean showMyLocationButton) {
-        view.setShowsMyLocationButton(showMyLocationButton);
     }
 
     @ReactProp(name = "toolbarEnabled", defaultBoolean = true)
@@ -153,27 +143,22 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
         view.map.getUiSettings().setRotateGesturesEnabled(rotateEnabled);
     }
 
-    @ReactProp(name = "cacheEnabled", defaultBoolean = false)
+    @ReactProp(name="cacheEnabled", defaultBoolean = false)
     public void setCacheEnabled(AirMapView view, boolean cacheEnabled) {
         view.setCacheEnabled(cacheEnabled);
     }
 
-    @ReactProp(name = "loadingEnabled", defaultBoolean = false)
+    @ReactProp(name="loadingEnabled", defaultBoolean = false)
     public void setLoadingEnabled(AirMapView view, boolean loadingEnabled) {
         view.enableMapLoading(loadingEnabled);
     }
 
-    @ReactProp(name = "moveOnMarkerPress", defaultBoolean = true)
-    public void setMoveOnMarkerPress(AirMapView view, boolean moveOnPress) {
-        view.setMoveOnMarkerPress(moveOnPress);
-    }
-
-    @ReactProp(name = "loadingBackgroundColor", customType = "Color")
+    @ReactProp(name="loadingBackgroundColor", customType="Color")
     public void setLoadingBackgroundColor(AirMapView view, @Nullable Integer loadingBackgroundColor) {
         view.setLoadingBackgroundColor(loadingBackgroundColor);
     }
 
-    @ReactProp(name = "loadingIndicatorColor", customType = "Color")
+    @ReactProp(name="loadingIndicatorColor", customType="Color")
     public void setLoadingIndicatorColor(AirMapView view, @Nullable Integer loadingIndicatorColor) {
         view.setLoadingIndicatorColor(loadingIndicatorColor);
     }
@@ -218,13 +203,6 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
             case FIT_TO_ELEMENTS:
                 view.fitToElements(args.getBoolean(0));
                 break;
-
-            case FIT_TO_SUPPLIED_MARKERS:
-                view.fitToSuppliedMarkers(args.getArray(0), args.getBoolean(1));
-                break;
-            case FIT_TO_COORDINATES:
-                view.fitToCoordinates(args.getArray(0), args.getMap(1), args.getBoolean(2));
-                break;
         }
     }
 
@@ -257,9 +235,7 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
         return MapBuilder.of(
                 "animateToRegion", ANIMATE_TO_REGION,
                 "animateToCoordinate", ANIMATE_TO_COORDINATE,
-                "fitToElements", FIT_TO_ELEMENTS,
-                "fitToSuppliedMarkers", FIT_TO_SUPPLIED_MARKERS,
-                "fitToCoordinates", FIT_TO_COORDINATES
+                "fitToElements", FIT_TO_ELEMENTS
         );
     }
 

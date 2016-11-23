@@ -13,11 +13,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class MapsPackage implements ReactPackage {
-    public MapsPackage(Activity activity) {
-    } // backwards compatability
-
-    public MapsPackage() {
-    }
+    public MapsPackage(Activity activity) { } // backwards compatability
+    public MapsPackage() { }
 
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
@@ -36,9 +33,7 @@ public class MapsPackage implements ReactPackage {
         AirMapPolylineManager polylineManager = new AirMapPolylineManager(reactContext);
         AirMapPolygonManager polygonManager = new AirMapPolygonManager(reactContext);
         AirMapCircleManager circleManager = new AirMapCircleManager(reactContext);
-        AirMapManager mapManager = new AirMapManager(reactContext);
-        AirMapLiteManager mapLiteManager = new AirMapLiteManager(reactContext);
-        AirMapUrlTileManager tileManager = new AirMapUrlTileManager(reactContext);
+        AirMapManager mapManager = new AirMapManager(reactContext.getBaseContext());
 
         return Arrays.<ViewManager>asList(
                 calloutManager,
@@ -46,8 +41,6 @@ public class MapsPackage implements ReactPackage {
                 polylineManager,
                 polygonManager,
                 circleManager,
-                mapManager,
-                mapLiteManager,
-                tileManager);
+                mapManager);
     }
 }

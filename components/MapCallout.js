@@ -1,45 +1,45 @@
-import React, { PropTypes } from 'react';
-import {
+
+var React = require('react');
+var {
+  PropTypes,
+} = React;
+
+var ReactNative = require('react-native');
+var {
   View,
+  NativeMethodsMixin,
+  requireNativeComponent,
   StyleSheet,
-} from 'react-native';
-import decorateMapComponent, {
-  SUPPORTED,
-  USES_DEFAULT_IMPLEMENTATION,
-} from './decorateMapComponent';
+} = ReactNative;
 
-const propTypes = {
-  ...View.propTypes,
-  tooltip: PropTypes.bool,
-  onPress: PropTypes.func,
-};
+var MapCallout = React.createClass({
+  mixins: [NativeMethodsMixin],
 
-const defaultProps = {
-  tooltip: false,
-};
+  propTypes: {
+    ...View.propTypes,
+    tooltip: PropTypes.bool,
+    onPress: PropTypes.func,
+  },
 
-class MapCallout extends React.Component {
-  render() {
-    const AIRMapCallout = this.getAirComponent();
+  getDefaultProps: function() {
+    return {
+      tooltip: false,
+    };
+  },
+
+  render: function() {
     return <AIRMapCallout {...this.props} style={[styles.callout, this.props.style]} />;
-  }
-}
+  },
+});
 
-MapCallout.propTypes = propTypes;
-MapCallout.defaultProps = defaultProps;
-
-const styles = StyleSheet.create({
+var styles = StyleSheet.create({
   callout: {
     position: 'absolute',
+    //flex: 0,
+    //backgroundColor: 'transparent',
   },
 });
 
-module.exports = decorateMapComponent(MapCallout, {
-  componentType: 'Callout',
-  providers: {
-    google: {
-      ios: SUPPORTED,
-      android: USES_DEFAULT_IMPLEMENTATION,
-    },
-  },
-});
+var AIRMapCallout = requireNativeComponent('AIRMapCallout', MapCallout);
+
+module.exports = MapCallout;

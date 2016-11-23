@@ -4,14 +4,11 @@
 
 | Prop | Type | Default | Note |
 |---|---|---|---|
-| `provider` | `string` |  | The map framework to use. <br/><br/>Either `"google"` for GoogleMaps, otherwise `null` or `undefined` to use the native map framework (`MapKit` in iOS and `GoogleMaps` in android).
 | `region` | `Region` |  | The region to be displayed by the map. <br/><br/>The region is defined by the center coordinates and the span of coordinates to display.
 | `initialRegion` | `Region` |  | The initial region to be displayed by the map.  Use this prop instead of `region` only if you don't want to control the viewport of the map besides the initial region.<br/><br/> Changing this prop after the component has mounted will not result in a region change.<br/><br/> This is similar to the `initialValue` prop of a text input.
-| `liteMode` | `Boolean` | `false` | Enable lite mode. **Note**: Android only.
 | `mapType` | `String` | `"standard"` | The map type to be displayed. <br/><br/> - standard: standard road map (default)<br/> - satellite: satellite view<br/> - hybrid: satellite view with roads and points of interest overlayed<br/> - terrain: (Android only) topographic view
 | `showsUserLocation` | `Boolean` | `false` | If `true` the app will ask for the user's location. **NOTE**: You need to add `NSLocationWhenInUseUsageDescription` key in Info.plist to enable geolocation, otherwise it is going to *fail silently*!
-| `followsUserLocation` | `Boolean` | `false` | If `true` the map will focus on the user's location. This only works if `showsUserLocation` is true and the user has shared their location. **Note**: iOS only.
-| `showsMyLocationButton` | `Boolean` | `true` | `Android only` If `false` hide the button to move map to the current user's location.
+| `followsUserLocation` | `Boolean` | `false` | If `true` the map will focus on the user's location. This only works if `showsUserLocation` is true and the user has shared their location.
 | `showsPointsOfInterest` | `Boolean` | `true` | If `false` points of interest won't be displayed on the map.
 | `showsCompass` | `Boolean` | `true` | If `false` compass won't be displayed on the map.
 | `showsScale` | `Boolean` | `true` | A Boolean indicating whether the map shows scale information.
@@ -34,8 +31,8 @@
 
 | Event Name | Returns | Notes
 |---|---|---|
-| `onRegionChange` | `Region` | Callback that is called continuously when the user is dragging the map.
-| `onRegionChangeComplete` | `Region` | Callback that is called once, when the user is done moving the map.
+| `onRegionChange` | `Region` | Fired when the map ends panning or zooming.
+| `onRegionChangeComplete` | `Region` | Fired when the map ends panning or zooming.
 | `onPress` | `{ coordinate: LatLng, position: Point }` | Callback that is called when user taps on the map.
 | `onPanDrag` | `{ coordinate: LatLng, position: Point }` | Callback that is called when user presses and drags the map. **NOTE**: for iOS `scrollEnabled` should be set to false to trigger the event
 | `onLongPress` | `{ coordinate: LatLng, position: Point }` | Callback that is called when user makes a "long press" somewhere on the map.
@@ -56,8 +53,6 @@
 | `animateToRegion` | `region: Region`, `duration: Number` |
 | `animateToCoordinate` | `region: Coordinate`, `duration: Number` |
 | `fitToElements` | `animated: Boolean` |
-| `fitToSuppliedMarkers` | `markerIDs: String[]` | If you need to use this in `ComponentDidMount`, make sure you put it in a timeout or it will cause performance problems.
-| `fitToCoordinates` | `coordinates: Array<LatLng>, edgePadding: EdgePadding, animated: Boolean` |
 
 
 
@@ -92,14 +87,5 @@ enum MapType : String {
   "satellite",
   "hybrid",
   "terrain" //Android only
-}
-```
-
-```
-type EdgePadding {
-  top: Number,
-  right: Number,
-  bottom: Number,
-  left: Number
 }
 ```

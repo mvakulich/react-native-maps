@@ -19,8 +19,8 @@ import javax.annotation.Nullable;
 
 public class AirMapMarkerManager extends ViewGroupManager<AirMapMarker> {
 
-    private static final int SHOW_INFO_WINDOW = 1;
-    private static final int HIDE_INFO_WINDOW = 2;
+    public static final int SHOW_INFO_WINDOW = 1;
+    public static final int HIDE_INFO_WINDOW = 2;
 
     public AirMapMarkerManager() {
     }
@@ -43,11 +43,6 @@ public class AirMapMarkerManager extends ViewGroupManager<AirMapMarker> {
     @ReactProp(name = "title")
     public void setTitle(AirMapMarker view, String title) {
         view.setTitle(title);
-    }
-
-    @ReactProp(name = "identifier")
-    public void setIdentifier(AirMapMarker view, String identifier) {
-        view.setIdentifier(identifier);
     }
 
     @ReactProp(name = "description")
@@ -116,12 +111,6 @@ public class AirMapMarkerManager extends ViewGroupManager<AirMapMarker> {
         view.setDraggable(draggable);
     }
 
-    @ReactProp(name = "zIndex", defaultFloat = 0.0f)
-    public void setZIndex(AirMapMarker view, float zIndex) {
-      int integerZIndex = Math.round(zIndex);
-      view.setZIndex(integerZIndex);
-    }
-
     @Override
     public void addView(AirMapMarker parent, View child, int index) {
         // if an <Callout /> component is a child, then it is a callout view, NOT part of the
@@ -165,7 +154,7 @@ public class AirMapMarkerManager extends ViewGroupManager<AirMapMarker> {
     @Override
     @Nullable
     public Map getExportedCustomDirectEventTypeConstants() {
-        Map<String, Map<String, String>> map = MapBuilder.of(
+        Map map = MapBuilder.of(
                 "onPress", MapBuilder.of("registrationName", "onPress"),
                 "onCalloutPress", MapBuilder.of("registrationName", "onCalloutPress"),
                 "onDragStart", MapBuilder.of("registrationName", "onDragStart"),

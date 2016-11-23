@@ -24,8 +24,6 @@
 #import "AIRMapPolygon.h"
 #import "AIRMapCircle.h"
 #import "SMCalloutView.h"
-#import "AIRMapUrlTile.h"
-#import "AIRMapSnapshot.h"
 
 #import <MapKit/MapKit.h>
 
@@ -163,63 +161,6 @@ RCT_EXPORT_METHOD(fitToElements:(nonnull NSNumber *)reactTag
     }];
 }
 
-RCT_EXPORT_METHOD(fitToSuppliedMarkers:(nonnull NSNumber *)reactTag
-                  markers:(nonnull NSArray *)markers
-                  animated:(BOOL)animated)
-{
-    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        id view = viewRegistry[reactTag];
-        if (![view isKindOfClass:[AIRMap class]]) {
-            RCTLogError(@"Invalid view returned from registry, expecting AIRMap, got: %@", view);
-        } else {
-            AIRMap *mapView = (AIRMap *)view;
-            // TODO(lmr): we potentially want to include overlays here... and could concat the two arrays together.
-            // id annotations = mapView.annotations;
-
-            NSPredicate *filterMarkers = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
-                AIRMapMarker *marker = (AIRMapMarker *)evaluatedObject;
-                return [marker isKindOfClass:[AIRMapMarker class]] && [markers containsObject:marker.identifier];
-            }];
-
-            NSArray *filteredMarkers = [mapView.annotations filteredArrayUsingPredicate:filterMarkers];
-
-            [mapView showAnnotations:filteredMarkers animated:animated];
-        }
-    }];
-}
-
-RCT_EXPORT_METHOD(fitToCoordinates:(nonnull NSNumber *)reactTag
-                  coordinates:(nonnull NSArray<AIRMapCoordinate *> *)coordinates
-                  edgePadding:(nonnull NSDictionary *)edgePadding
-                  animated:(BOOL)animated)
-{
-    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        id view = viewRegistry[reactTag];
-        if (![view isKindOfClass:[AIRMap class]]) {
-            RCTLogError(@"Invalid view returned from registry, expecting AIRMap, got: %@", view);
-        } else {
-            AIRMap *mapView = (AIRMap *)view;
-
-            // Create Polyline with coordinates
-            CLLocationCoordinate2D coords[coordinates.count];
-            for(int i = 0; i < coordinates.count; i++)
-            {
-                coords[i] = coordinates[i].coordinate;
-            }
-            MKPolyline *polyline = [MKPolyline polylineWithCoordinates:coords count:coordinates.count];
-
-            // Set Map viewport
-            CGFloat top = [RCTConvert CGFloat:edgePadding[@"top"]];
-            CGFloat right = [RCTConvert CGFloat:edgePadding[@"right"]];
-            CGFloat bottom = [RCTConvert CGFloat:edgePadding[@"bottom"]];
-            CGFloat left = [RCTConvert CGFloat:edgePadding[@"left"]];
-
-            [mapView setVisibleMapRect:[polyline boundingMapRect] edgePadding:UIEdgeInsetsMake(top, left, bottom, right) animated:animated];
-
-        }
-    }];
-}
-
 RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
         withWidth:(nonnull NSNumber *)width
         withHeight:(nonnull NSNumber *)height
@@ -286,12 +227,6 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
                           }
                       }
 
-                      for (id <AIRMapSnapshot> overlay in mapView.overlays) {
-                          if ([overlay respondsToSelector:@selector(drawToSnapshot:context:)]) {
-                                  [overlay drawToSnapshot:snapshot context:UIGraphicsGetCurrentContext()];
-                          }
-                      }
-
                       UIImage *compositeImage = UIGraphicsGetImageFromCurrentImageContext();
 
                       NSData *data = UIImagePNGRepresentation(compositeImage);
@@ -308,75 +243,21 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
 
 #pragma mark Gesture Recognizer Handlers
 
-#define MAX_DISTANCE_PX 10.0f
 - (void)handleMapTap:(UITapGestureRecognizer *)recognizer {
     AIRMap *map = (AIRMap *)recognizer.view;
-
-    CGPoint tapPoint = [recognizer locationInView:map];
-    CLLocationCoordinate2D tapCoordinate = [map convertPoint:tapPoint toCoordinateFromView:map];
-    MKMapPoint mapPoint = MKMapPointForCoordinate(tapCoordinate);
-    CGPoint mapPointAsCGP = CGPointMake(mapPoint.x, mapPoint.y);
-
-    double maxMeters = [self metersFromPixel:MAX_DISTANCE_PX atPoint:tapPoint forMap:map];
-    float nearestDistance = MAXFLOAT;
-    AIRMapPolyline *nearestPolyline = nil;
-
-    for (id<MKOverlay> overlay in map.overlays) {
-        if([overlay isKindOfClass:[AIRMapPolygon class]]){
-            AIRMapPolygon *polygon = (AIRMapPolygon*) overlay;
-            if (polygon.onPress) {
-                CGMutablePathRef mpr = CGPathCreateMutable();
-
-                for(int i = 0; i < polygon.coordinates.count; i++) {
-                    AIRMapCoordinate *c = polygon.coordinates[i];
-                    MKMapPoint mp = MKMapPointForCoordinate(c.coordinate);
-                    if (i == 0) {
-                        CGPathMoveToPoint(mpr, NULL, mp.x, mp.y);
-                    } else {
-                        CGPathAddLineToPoint(mpr, NULL, mp.x, mp.y);
-                    }
-                }
-
-                if (CGPathContainsPoint(mpr, NULL, mapPointAsCGP, FALSE)) {
-                    id event = @{
-                                @"action": @"polygon-press",
-                                };
-                    polygon.onPress(event);
-                }
-
-                CGPathRelease(mpr);
-            }
-        }
-
-        if([overlay isKindOfClass:[AIRMapPolyline class]]){
-            AIRMapPolyline *polyline = (AIRMapPolyline*) overlay;
-            if (polyline.onPress) {
-                float distance = [self distanceOfPoint:MKMapPointForCoordinate(tapCoordinate)
-                                          toPoly:polyline];
-                if (distance < nearestDistance) {
-                    nearestDistance = distance;
-                    nearestPolyline = polyline;
-                }
-            }
-        }
-    }
-
-    if (nearestDistance <= maxMeters) {
-        id event = @{
-                   @"action": @"polyline-press",
-                   };
-        nearestPolyline.onPress(event);
-    }
-
     if (!map.onPress) return;
+
+    CGPoint touchPoint = [recognizer locationInView:map];
+    CLLocationCoordinate2D coord = [map convertPoint:touchPoint toCoordinateFromView:map];
+
     map.onPress(@{
             @"coordinate": @{
-                    @"latitude": @(tapCoordinate.latitude),
-                    @"longitude": @(tapCoordinate.longitude),
+                    @"latitude": @(coord.latitude),
+                    @"longitude": @(coord.longitude),
             },
             @"position": @{
-                    @"x": @(tapPoint.x),
-                    @"y": @(tapPoint.y),
+                    @"x": @(touchPoint.x),
+                    @"y": @(touchPoint.y),
             },
     });
 
@@ -436,8 +317,6 @@ RCT_EXPORT_METHOD(takeSnapshot:(nonnull NSNumber *)reactTag
         return ((AIRMapPolygon *)overlay).renderer;
     } else if ([overlay isKindOfClass:[AIRMapCircle class]]) {
         return ((AIRMapCircle *)overlay).renderer;
-    } else if ([overlay isKindOfClass:[AIRMapUrlTile class]]) {
-        return ((AIRMapUrlTile *)overlay).renderer;
     } else {
         return nil;
     }
@@ -559,7 +438,7 @@ static int kDragCenterContext;
         [mapView setRegion:region animated:YES];
 
         // Move to user location only for the first time it loads up.
-        // mapView.followUserLocation = NO;
+        mapView.followUserLocation = NO;
     }
 }
 
@@ -661,55 +540,6 @@ static int kDragCenterContext;
                 }
         });
     }
-}
-
-/** Returns the distance of |pt| to |poly| in meters
- *
- *
- */
-- (double)distanceOfPoint:(MKMapPoint)pt toPoly:(AIRMapPolyline *)poly
-{
-    double distance = MAXFLOAT;
-    for (int n = 0; n < poly.coordinates.count - 1; n++) {
-
-        MKMapPoint ptA = MKMapPointForCoordinate(poly.coordinates[n].coordinate);
-        MKMapPoint ptB = MKMapPointForCoordinate(poly.coordinates[n + 1].coordinate);
-
-        double xDelta = ptB.x - ptA.x;
-        double yDelta = ptB.y - ptA.y;
-
-        if (xDelta == 0.0 && yDelta == 0.0) {
-            continue;
-        }
-
-        double u = ((pt.x - ptA.x) * xDelta + (pt.y - ptA.y) * yDelta) / (xDelta * xDelta + yDelta * yDelta);
-        MKMapPoint ptClosest;
-        if (u < 0.0) {
-            ptClosest = ptA;
-        }
-        else if (u > 1.0) {
-            ptClosest = ptB;
-        }
-        else {
-            ptClosest = MKMapPointMake(ptA.x + u * xDelta, ptA.y + u * yDelta);
-        }
-
-        distance = MIN(distance, MKMetersBetweenMapPoints(ptClosest, pt));
-    }
-
-    return distance;
-}
-
-
-/** Converts |px| to meters at location |pt| */
-- (double)metersFromPixel:(NSUInteger)px atPoint:(CGPoint)pt forMap:(AIRMap *)mapView
-{
-    CGPoint ptB = CGPointMake(pt.x + px, pt.y);
-
-    CLLocationCoordinate2D coordA = [mapView convertPoint:pt toCoordinateFromView:mapView];
-    CLLocationCoordinate2D coordB = [mapView convertPoint:ptB toCoordinateFromView:mapView];
-
-    return MKMetersBetweenMapPoints(MKMapPointForCoordinate(coordA), MKMapPointForCoordinate(coordB));
 }
 
 @end
