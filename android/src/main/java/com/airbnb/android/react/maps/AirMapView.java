@@ -134,6 +134,17 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
         eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
     }
+    
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (w > 0 && h > 0 && boundsToMove != null) {
+            map.moveCamera(CameraUpdateFactory.newLatLngBounds(boundsToMove, getWidth(), getHeight(), 0));
+            if (isMapLoaded) {
+                boundsToMove = null;
+            }
+        }
+    }
 
     @Override
     public void onMapReady(final GoogleMap map) {
@@ -241,6 +252,10 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
             @Override public void onMapLoaded() {
                 isMapLoaded = true;
                 AirMapView.this.cacheView();
+                if (boundsToMove != null) {
+                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(boundsToMove, getWidth(), getHeight(), 0));
+                    boundsToMove = null;
+                }
             }
         });
 
@@ -297,7 +312,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                 new LatLng(lat - latDelta / 2, lng - lngDelta / 2), // southwest
                 new LatLng(lat + latDelta / 2, lng + lngDelta / 2)  // northeast
         );
-        if (super.getHeight() <= 0 || super.getWidth() <= 0) {
+        if (super.getHeight() <= 0 || super.getWidth() <= 0 || !isMapLoaded) {
             // in this case, our map has not been laid out yet, so we save the bounds in a local
             // variable, and make a guess of zoomLevel 10. Not to worry, though: as soon as layout
             // occurs, we will move the camera to the saved bounds. Note that if we tried to move
@@ -462,7 +477,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     public void updateExtraData(Object extraData) {
         // if boundsToMove is not null, we now have the MapView's width/height, so we can apply
         // a proper camera move
-        if (boundsToMove != null) {
+        /*if (boundsToMove != null) {
             HashMap<String, Float> data = (HashMap<String, Float>) extraData;
             float width = data.get("width");
             float height = data.get("height");
@@ -475,7 +490,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                     )
             );
             boundsToMove = null;
-        }
+        }*/
     }
 
     public void animateToRegion(LatLngBounds bounds, int duration) {
