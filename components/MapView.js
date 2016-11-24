@@ -456,6 +456,7 @@ var AIRMap = requireNativeComponent('AIRMap', MapView, {
     onChange: true,
     onMapReady: true,
     handlePanDrag: true,
+    onLocationChange: true
   },
 });
 
