@@ -145,9 +145,9 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
         eventDispatcher = context.getNativeModule(UIManagerModule.class).getEventDispatcher();
     }
-
+    
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    protected synchronized void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         if (w > 0 && h > 0 && boundsToMove != null) {
             map.moveCamera(CameraUpdateFactory.newLatLngBounds(boundsToMove, getWidth(), getHeight(), 0));
@@ -159,7 +159,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
 
     @Override
-    public void onMapReady(final GoogleMap map) {
+    public synchronized void onMapReady(final GoogleMap map) {
         this.map = map;
         this.map.setInfoWindowAdapter(this);
         this.map.setOnMarkerDragListener(this);
@@ -237,11 +237,18 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
         map.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
             @Override public void onMapLoaded() {
+                synchronized (AirMapView.this) {
                 isMapLoaded = true;
                 AirMapView.this.cacheView();
                 if (boundsToMove != null) {
                     map.moveCamera(CameraUpdateFactory.newLatLngBounds(boundsToMove, getWidth(), getHeight(), 0));
                     boundsToMove = null;
+                }
+                    if (showUserLocation) {
+                        map.setOnMyLocationChangeListener(AirMapView.this);
+                        pushLocation(map.getMyLocation());
+                    }
+                    manager.pushEvent(AirMapView.this, "onMapLoaded", null);
                 }
             }
         });
@@ -326,7 +333,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         onDestroy();
     }
 
-    public void setRegion(ReadableMap region) {
+    public synchronized void setRegion(ReadableMap region) {
         if (region == null) return;
 
         Double lng = region.getDouble("longitude");
